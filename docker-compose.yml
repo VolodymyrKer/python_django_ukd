@@ -1,0 +1,55 @@
+services:
+  django:
+    build: .
+    container_name: django
+    restart: always
+    #command: gunicorn mysite.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - static_volume:/home/app/staticfiles
+      - media_volume:/home/app/mediafiles
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+    networks:
+      - django
+
+  # https://hub.docker.com/_/postgres
+  postgres:
+    container_name: postgres
+    image: postgres:14.0-alpine
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+    networks:
+      - django
+
+  nginx:
+    container_name: nginx
+    image: nginx
+    restart: always
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./templates:/etc/nginx/templates
+      - static_volume:/home/app/staticfiles
+      - media_volume:/home/app/mediafiles
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/lib/letsencrypt:/var/lib/letsencrypt
+    depends_on:
+      - django
+    env_file:
+      - .env
+    networks:
+      - django
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
+
+networks:
+  django:
